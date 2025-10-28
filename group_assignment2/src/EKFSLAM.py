@@ -33,12 +33,11 @@ class EKFSLAM:
         np.ndarray, shape = (3,)
             the predicted state
         """
-        # TODO replace this with your own code
-        xpred = solution.EKFSLAM.EKFSLAM.f(self, x, u)
-        return xpred
 
         # TODO, eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
-        xpred = None
+        heading = utils.wrapToPi(x[2])
+        xpred = np.array([x[0]+u[0]*np.cos(heading)-u[1]*np.sin(heading),
+                          x[1]+u[0]*np.sin(heading)+u[1]*np.cos(heading), heading+u[2]]).T
 
         return xpred
 
@@ -57,11 +56,10 @@ class EKFSLAM:
         np.ndarray
             The Jacobian of f wrt. x.
         """
-        # TODO replace this with your own code
-        Fx = solution.EKFSLAM.EKFSLAM.Fx(self, x, u)
-        return Fx
-
-        Fx = None  # TODO, eq (11.13)
+        heading = utils.wrapToPi(x[2])
+        # TODO, eq (11.13)
+        Fx = np.array(
+            [[1, 0, -u[0]*np.sin(heading)-u[1]*np.cos(heading)], [0, 1, u[0]*np.cos(heading)-u[1]*np.sin(heading)], [0, 0, 1]])
 
         return Fx
 
