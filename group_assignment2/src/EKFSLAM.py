@@ -207,8 +207,6 @@ class EKFSLAM:
         np.ndarray, shape=(2 * #landmarks, 3 + 2 * #landmarks)
             the jacobian of h wrt. eta.
         """
-        H = solution.EKFSLAM.EKFSLAM.h_jac(self, eta)
-        return H
 
         # extract states and map
         x = eta[0:3]
@@ -220,17 +218,21 @@ class EKFSLAM:
         Rot = rotmat2d(x[2])
 
         # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
-        delta_m = None
+        delta_m = (m - (x[:2] +
+                        rotmat2d(x[2]) @ self.sensor_offset)[:, None])
 
         # TODO, (2, #measurements), each measured position in cartesian coordinates like
-        zc = None
+        zc = Rot @ delta_m
         # [x coordinates;
         #  y coordinates]
-
-        zpred = None  # TODO (2, #measurements), predicted measurements, like
+        zpred_r = np.hypot(zc[0], zc[1])
+        zpred_theta = np.arctan2(zc[1], zc[0])  # TODO, bearings
+        # TODO, the two arrays above stacked on top of each other vertically like
+        # TODO (2, #measurements), predicted measurements, like
+        zpred = np.array([[zpred_r], [zpred_theta]])
         # [ranges;
         #  bearings]
-        zr = None  # TODO, ranges
+        zr = zpred_r  # TODO, ranges
 
         Rpihalf = rotmat2d(np.pi / 2)
 
@@ -252,8 +254,18 @@ class EKFSLAM:
             ind = 2 * i  # starting postion of the ith landmark into H
             # the inds slice for the ith landmark into H
             inds = slice(ind, ind + 2)
+            dx = m[0, i] - x[0]
+            dy = m[1, i] - x[1]
+            q = dx*dx + dy*dy
+            r = np.sqrt(q)
 
-            # TODO: Set H or Hx and Hm here
+            Hxi = np.array([[-dx/r, -dy/r,            0.0],
+                            [dy/q, -dx/q,           -1.0]])
+            Hmi = np.array([[dx/r,  dy/r],
+                            [-dy/q,  dx/q]])
+
+            Hx[inds, :] = Hxi
+            Hm[inds, 2*i:2*i+2] = Hmi
 
         # TODO: You can set some assertions here to make sure that some of the structure in H is correct
         return H
