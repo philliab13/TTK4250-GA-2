@@ -168,14 +168,19 @@ class EKFSLAM:
 
         # None as index ads an axis with size 1 at that position.
         # Numpy broadcasts size 1 dimensions to any size when needed
-        delta_m = None  # TODO, relative position of landmark to sensor on robot in world frame
+        # TODO, relative position of landmark to sensor on robot in world frame
+        delta_m = (m - (x[:2] +
+                        rotmat2d(x[2]) @ self.sensor_offset)[:, None])
 
         # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
-        zpredcart = None
+        zpredcart = Rot @ delta_m
 
-        zpred_r = None  # TODO, ranges
-        zpred_theta = None  # TODO, bearings
-        zpred = None  # TODO, the two arrays above stacked on top of each other vertically like
+        # (11.11)
+        # TODO, ranges
+        zpred_r = np.hypot(zpredcart[0], zpredcart[1])
+        zpred_theta = np.arctan2(zpredcart[1], zpredcart[0])  # TODO, bearings
+        # TODO, the two arrays above stacked on top of each other vertically like
+        zpred = np.array([[zpred_r], [zpred_theta]])
         # [ranges;
         #  bearings]
         # into shape (2, #lmrk)
