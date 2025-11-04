@@ -1,7 +1,8 @@
 # %% Imports
+from pathlib import Path
+
 from scipy.io import loadmat
 from scipy.stats import chi2
-from pathlib import Path
 
 try:
     from tqdm import tqdm
@@ -14,14 +15,15 @@ except ImportError as e:
         return args[0]
 
 
-import numpy as np
-from EKFSLAM import EKFSLAM
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+import scienceplots
+from EKFSLAM import EKFSLAM
 from matplotlib import animation
 from plotting import ellipse
-from vp_utils import detectTrees, odometry, Car
 from utils import rotmat2d
+from vp_utils import Car, detectTrees, odometry
 
 # %% plot config check and style setup
 
@@ -109,17 +111,18 @@ def main():
     b = 0.5  # laser distance to the left of center
 
     car = Car(L, H, a, b)
-
-    sigmas = 0.025 * np.array([0.0001, 0.00005, 6 * np.pi / 180])  # TODO tune
+    
+    # previous good values NIS
+    sigmas = np.array([0.08, 0.08, np.deg2rad(2.0)]) ** 2 # TODO tune
     CorrCoeff = np.array([[1, 0, 0], [0, 1, 0.9], [0, 0.9, 1]])
     Q = np.diag(sigmas) @ CorrCoeff @ np.diag(sigmas)
-    R = np.diag([0.1, 1 * np.pi / 180]) ** 2  # TODO tune
-
-    # first is for joint compatibility, second is individual
-    JCBBalphas = np.array([0.00001, 1e-6])  # TODO tune
-
     
-        
+    # sigma range, sigma bearing
+    R = np.diag([0.10, np.deg2rad(0.8)]) ** 2  # TODO tune
+    
+    # first is for joint compatibility, second is individual
+    JCBBalphas = np.array([0.05, 0.05])  # TODO tune
+
     sensorOffset = np.array([car.a + car.L, car.b])
     doAsso = True
 
@@ -147,8 +150,7 @@ def main():
     # %%  run
     N = 5000  # K
 
-    doPlot = False
-
+    doPlot = True
     lh_pose = None
 
     if doPlot:
@@ -238,11 +240,12 @@ def main():
         (NISnorm[:mk] <= CInorm[:mk, 1])
 
     fig3, ax3 = plt.subplots(num=3, clear=True)
-    ax3.plot(CInorm[:mk, 0], "--")
-    ax3.plot(CInorm[:mk, 1], "--")
-    ax3.plot(NISnorm[:mk], lw=0.5)
+    ax3.plot(CInorm[:mk, 0], "--", label="lower-CI-bound")
+    ax3.plot(CInorm[:mk, 1], "--", label="upper-CI-bound")
+    ax3.plot(NISnorm[:mk], lw=0.5, label="NIS")
 
     ax3.set_title(f"NIS, {insideCI.mean()*100:.2f}% inside CI")
+    ax3.legend()
 
     # %% slam
 
@@ -271,4 +274,5 @@ def main():
 
 
 if __name__ == "__main__":
+    main()
     main()

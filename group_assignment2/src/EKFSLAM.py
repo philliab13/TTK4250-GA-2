@@ -26,6 +26,7 @@ class EKFSLAM:
         x : np.ndarray, shape=(3,)
             the robot state
         u : np.ndarray, shape=(3,)
+        
             the odometry
 
         Returns
